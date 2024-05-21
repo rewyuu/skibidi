@@ -36,7 +36,7 @@ if (isset($_POST["login"])) {
                     $_SESSION["user"] = $user;
             
                     if ($user["email"] === 'yes') { 
-                        header("Location: admin.php");
+                        header("Location: ../admin-panel/index.html");
                         exit();
                     } else {
                         header("Location: index.php");
