@@ -51,6 +51,15 @@ CREATE TABLE `orders` (
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+-- table for menu items
+CREATE TABLE `products` (
+    `id` INT AUTO_INCREMENT PRIMARY KEY,
+    `name` VARCHAR(255) NOT NULL,
+    `price` DECIMAL(10, 2) NOT NULL,
+    `image` VARCHAR(255) NOT NULL,
+    `category` VARCHAR(50) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 -- insert cmds
 INSERT INTO `users` (`username`, `email`, `password`, `phone`, `address`) VALUES
 ('admin', 'yes', 'bisayaslayers', '6942022222', 'yes yes yes');

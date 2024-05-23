@@ -19,26 +19,28 @@ if (isset($_POST["login"])) {
         $_SESSION["errors"] = $errors;
         header("Location: login.php");
         exit();
-    } else {
+    }
+     else {
         $sql = "SELECT * FROM users WHERE username = ? LIMIT 1";
         $stmt = mysqli_stmt_init($conn);
 
         if (!mysqli_stmt_prepare($stmt, $sql)) {
             die("SQL statement failed: " . mysqli_stmt_error($stmt));
-        } else {
+        } 
+        else {
             mysqli_stmt_bind_param($stmt, "s", $username);
             mysqli_stmt_execute($stmt);
             $result = mysqli_stmt_get_result($stmt);
             $user = mysqli_fetch_assoc($result);
 
             if ($user) {
-                if ($password === $user["password"]) { 
-                    $_SESSION["user"] = $user;
-            
-                    if ($user["email"] === 'yes') { 
-                        header("Location: ../admin-panel/index.html");
+                if ($password === $user["password"]) {
+                    if ($username === 'admin') { 
+                        $_SESSION["admin"] = true;
+                        header("Location: ../admin-panel-2/admin.php");
                         exit();
                     } else {
+                        $_SESSION["user"] = $user;
                         header("Location: index.php");
                         exit();
                     }

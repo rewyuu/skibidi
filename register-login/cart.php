@@ -266,7 +266,7 @@ $conn->close();
             border: none;
             padding: 10px 20px;
             text-align: center;
-            text-decoration: none;
+            text-decoration:     none;
             border-radius: 4px;
             cursor: pointer;
             margin-bottom: 10px;

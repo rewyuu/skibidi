@@ -4,7 +4,18 @@ include('database.php');
 
 $userID = $_SESSION['user']['id'];
 
-$query = "SELECT * FROM cart_items WHERE user_id = ?";
+$query = "SELECT address, email, phone FROM users WHERE id = ? ";
+$stmt = $conn->prepare($query);
+$stmt->bind_param("i", $userID);
+$stmt->execute();
+$result = $stmt->get_result();
+$user = $result->fetch_assoc();
+$userAddress = $user['address'];
+$userEmail = $user['email'];
+$userPhone = $user['phone'];
+$stmt->close();
+
+$query = "SELECT * FROM cart_items WHERE user_id = ? ";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userID);
 $stmt->execute();
@@ -18,11 +29,10 @@ while ($row = $result->fetch_assoc()) {
 $stmt->close();
 
 $totalPrice = 0;
-$orderedItems = []; 
+$orderedItems = [];
 
 foreach ($cartItems as $item) {
     $totalPrice += ($item['item_price'] * $item['quantity']);
-
     $orderedItems[] = [
         'item_name' => $item['item_name'],
         'item_price' => $item['item_price'],
@@ -44,10 +54,6 @@ if (isset($_POST['place_order'])) {
     $email = $_POST['email'];
     $payment_method = $_POST['payment_method'];
     $address = $_POST['address'];
-    $country = $_POST['country'];
-    $state = $_POST['state'];
-    $city = $_POST['city'];
-    $pin_code = $_POST['pin_code'];
 
     $insert_order_query = "INSERT INTO orders (user_id, address, payment_type, ordered_items) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($insert_order_query);
@@ -73,7 +79,6 @@ if (isset($_POST['place_order'])) {
 
 $conn->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -197,8 +202,8 @@ $conn->close();
 
 <div class="container">
     <div class="home-button">
-            <a href="index.php"><i class="fas fa-home"></i> Home</a>
-        </div>
+        <a href="index.php"><i class="fas fa-home"></i> Home</a>
+    </div>
     <h1 class="heading">Checkout</h1>
 
     <div class="order-summary">
@@ -215,9 +220,9 @@ $conn->close();
             <tbody>
                 <?php foreach ($cartItems as $item): ?>
                     <tr>
-                        <td><?php echo $item['item_name']; ?></td>
+                        <td><?php echo htmlspecialchars($item['item_name']); ?></td>
                         <td><?php echo 'P' . number_format($item['item_price'], 2); ?></td>
-                        <td><?php echo $item['quantity']; ?></td>
+                        <td><?php echo htmlspecialchars($item['quantity']); ?></td>
                         <td><?php echo 'P' . number_format($item['item_price'] * $item['quantity'], 2); ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -236,10 +241,10 @@ $conn->close();
                 <input type="text" name="name" placeholder="Your Name" required>
             </div>
             <div class="inputBox">
-                <input type="tel" name="number" placeholder="Your Phone Number" required>
+                <input type="tel" name="number" value="<?php echo htmlspecialchars($userPhone); ?>" placeholder="Your Phone Number" required>
             </div>
             <div class="inputBox">
-                <input type="email" name="email" placeholder="Your Email" required>
+                <input type="email" name="email" value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Your Email" required>
             </div>
             <div class="inputBox">
                 <select name="payment_method" required>
@@ -248,25 +253,11 @@ $conn->close();
                 </select>
             </div>
             <div class="inputBox">
-                <input type="text" name="address" placeholder="Address" required>
+                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" required>
             </div>
-            <div class="inputBox">
-                <input type="text" name="country" placeholder="Country" required>
-            </div>
-            <div class="inputBox">
-                <input type="text" name="state" placeholder="State" required>
-            </div>
-            <div class="inputBox">
-                <input type="text" name="city" placeholder="City" required>
-            </div>
-            <div class="inputBox">
-                <input type="text" name="zip_code" placeholder="ZIP Code" required>
-            </div>
-
             <input type="submit" name="place_order" value="Place Order" class="btn">
         </form>
     </div>
-
 </div>
 
 </body>
