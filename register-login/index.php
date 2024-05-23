@@ -346,7 +346,8 @@ filterButtons.forEach(button => {
                 <li>
                     <div class="food-menu-card" data-category="<?php echo htmlspecialchars($product['category']); ?>">
                         <div class="card-banner">
-                        <img src="./images/<?php echo htmlspecialchars($product['image']); ?>" width="300" height="300" loading="lazy" alt="<?php echo htmlspecialchars($product['name']); ?>" class="w-100">
+                        <img src="../admin-panel-2/images/<?php echo htmlspecialchars($product['image']); ?>" width="300" height="300" loading="lazy" 
+                        alt="<?php echo htmlspecialchars($product['name']); ?>" class="w-100">
                             <button class="btn food-menu-btn" onclick="addToCart('<?php echo htmlspecialchars($product['name']); ?>', <?php echo htmlspecialchars($product['price']); ?>)">Add to Cart</button>
                         </div>
                         <div class="wrapper">
