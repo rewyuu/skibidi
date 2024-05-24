@@ -75,6 +75,7 @@ if (mysqli_num_rows($result) > 0) {
               function redirectToLogin() {
                   window.location.href = "register-login/login.php";
               }
+              
           </script>
     
             <button class="nav-toggle-btn" aria-label="Toggle Menu" data-menu-toggle-btn>
@@ -202,16 +203,16 @@ if (mysqli_num_rows($result) > 0) {
 
           <ul class="fiter-list">
             <li>
-              <button class="filter-btn  active" data-category="all">All</button>
+              <button class="filter-btn  active" data-category="All">All</button>
             </li>
             <li>
-              <button class="filter-btn" data-category="dishes" >Dishes</button>
+              <button class="filter-btn" data-category="Dishes" >Dishes</button>
             </li>
             <li>
-              <button class="filter-btn" data-category="add-ons">Add-ons</button>
+              <button class="filter-btn" data-category="Add-ons">Add-ons</button>
             </li>
             <li>
-              <button class="filter-btn" data-category="drinks">Drinks</button>
+              <button class="filter-btn" data-category="Drinks">Drinks</button>
             </li>
           </ul>
 
@@ -236,28 +237,24 @@ if (mysqli_num_rows($result) > 0) {
         const foodMenuCards = document.querySelectorAll('.food-menu-card');
 
         foodMenuCards.forEach(card => {
-            card.classList.add('active'); // Initially show all cards
+            card.classList.add('active');
         });
 
-        function handleButtonClick(event) {
-            const category = event.target.getAttribute('data-category');
-
-            filterButtons.forEach(btn => btn.classList.remove('active')); // Remove active class from all buttons
-            event.target.classList.add('active'); // Add active class to the clicked button
-
-            foodMenuCards.forEach(card => {
-                const cardCategory = card.getAttribute('data-category');
-
-                if (category === 'all' || cardCategory === category) {
-                    card.classList.add('active'); // Show cards that match the selected category or show all if 'All' is selected
-                } else {
-                    card.classList.remove('active'); // Hide cards that do not match the selected category
-                }
-            });
-        }
-
         filterButtons.forEach(button => {
-            button.addEventListener('click', handleButtonClick); // Attach click event listener to each filter button
+            button.addEventListener('click', function () {
+                const category = button.getAttribute('data-category');
+
+                filterButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+
+                foodMenuCards.forEach(card => {
+                    if (category === 'All' || card.getAttribute('data-category') === category) {
+                        card.classList.add('active');
+                    } else {
+                        card.classList.remove('active');
+                    }
+                });
+            });
         });
     });
           </script>
