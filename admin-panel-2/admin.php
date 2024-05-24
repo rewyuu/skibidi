@@ -8,6 +8,10 @@ include('../register-login/database.php');
 
 $message = '';
 
+function sanitizeInput($input) {
+    return htmlspecialchars(stripslashes(trim($input)));
+}
+
 if (isset($_POST['delete_product'])) {
     $product_id = $_POST['product_id'];
 
@@ -27,12 +31,10 @@ if (isset($_POST['delete_product'])) {
             } else {
                 $message = 'Failed to delete product.';
             }
-        } 
-        else {
+        } else {
             $message = 'Product not found.';
         }
-    } 
-    else {
+    } else {
         $message = 'Query failed to execute.';
     }
 }
@@ -94,63 +96,125 @@ if (isset($_POST['add_product'])) {
 
 if (isset($_POST['edit_product'])) {
     $product_id = $_POST['product_id'];
-    $name = mysqli_real_escape_string($conn, $_POST['name']);
-    $price = mysqli_real_escape_string($conn, $_POST['price']);
-    $category = mysqli_real_escape_string($conn, $_POST['category']);
+    $message = '';
 
-    if ($_FILES['edit_image']['name']) {
-        $target_dir = "images/";
-        if (!is_dir($target_dir)) {
-            mkdir($target_dir, 0777, true);
-        }
+    $current_product_query = mysqli_query($conn, "SELECT * FROM products WHERE id = '$product_id'");
+    if (!$current_product_query) {
+        $message = 'Failed to fetch current product data.';
+    } else {
+        $current_product_data = mysqli_fetch_assoc($current_product_query);
 
-        $target_file = $target_dir . generateUniqueFilename($_FILES["edit_image"]["name"], $target_dir);
-        $uploadOk = 1;
-        $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
+        $name = mysqli_real_escape_string($conn, $_POST['name']);
+        $price = mysqli_real_escape_string($conn, $_POST['price']);
+        $category = mysqli_real_escape_string($conn, $_POST['category']);
+        $image = $current_product_data['image'];
 
-        $check = getimagesize($_FILES["edit_image"]["tmp_name"]);
-        if ($check !== false) {
+        if ($_FILES['edit_image']['name']) {
+            $target_dir = "images/";
+            if (!is_dir($target_dir)) {
+                mkdir($target_dir, 0777, true);
+            }
+
+            $target_file = $target_dir . generateUniqueFilename($_FILES["edit_image"]["name"], $target_dir);
             $uploadOk = 1;
-        } else {
-            $message = "File is not an image.";
-            $uploadOk = 0;
-        }
+            $imageFileType = strtolower(pathinfo($target_file, PATHINFO_EXTENSION));
 
-        if ($_FILES["edit_image"]["size"] > 500000) {
-            $message = "Sorry, your file is too large.";
-            $uploadOk = 0;
-        }
-
-        if ($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif") {
-            $message = "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
-            $uploadOk = 0;
-        }
-
-        if ($uploadOk == 0) {
-            $message = "Sorry, your file was not uploaded.";
-        } else {
-            if (move_uploaded_file($_FILES["edit_image"]["tmp_name"], $target_file)) {
-                $image = basename($target_file);
-
-                $update_query = "UPDATE products SET name = '$name', price = '$price', image = '$image', category = '$category' WHERE id = '$product_id'";
-                $update_product = mysqli_query($conn, $update_query);
-                if ($update_product) {
-                    $message = 'Product updated successfully!';
-                } else {
-                    $message = 'Failed to update product.';
-                }
+            $check = getimagesize($_FILES["edit_image"]["tmp_name"]);
+            if ($check !== false) {
+                $uploadOk = 1;
             } else {
-                $message = "Sorry, there was an error uploading your file.";
+                $message = "File is not an image.";
+                $uploadOk = 0;
+            }
+
+            if ($_FILES["edit_image"]["size"] > 500000) {
+                $message = "Sorry, your file is too large.";
+                $uploadOk = 0;
+            }
+
+            if ($imageFileType != "jpg" && $imageFileType != "png" && $imageFileType != "jpeg" && $imageFileType != "gif") {
+                $message = "Sorry, only JPG, JPEG, PNG & GIF files are allowed.";
+                $uploadOk = 0;
+            }
+
+            if ($uploadOk == 0) {
+                $message = "Sorry, your file was not uploaded.";
+            } else {
+                if (move_uploaded_file($_FILES["edit_image"]["tmp_name"], $target_file)) {
+                    $image = basename($target_file);
+                } else {
+                    $message = "Sorry, there was an error uploading your file.";
+                }
             }
         }
-    } else {
-        $update_query = "UPDATE products SET name = '$name', price = '$price', category = '$category' WHERE id = '$product_id'";
+
+        $update_fields = [];
+        if (!empty($name)) {
+            $update_fields[] = "name = '$name'";
+        }
+        if (!empty($price)) {
+            $update_fields[] = "price = '$price'";
+        }
+        if (!empty($category)) {
+            $update_fields[] = "category = '$category'";
+        }
+        $update_fields[] = "image = '$image'";
+
+        $update_query = "UPDATE products SET " . implode(", ", $update_fields) . " WHERE id = '$product_id'";
         $update_product = mysqli_query($conn, $update_query);
+
         if ($update_product) {
             $message = 'Product updated successfully!';
         } else {
             $message = 'Failed to update product.';
         }
+    }
+}
+
+if (isset($_POST['update_order'])) {
+    $order_id = $_POST['order_id'];
+    $status = $_POST['status'];
+    $update_query = "UPDATE orders SET status = ? WHERE id = ?";
+    $stmt = mysqli_prepare($conn, $update_query);
+    mysqli_stmt_bind_param($stmt, "si", $status, $order_id);
+    $update_result = mysqli_stmt_execute($stmt);
+
+    if ($update_result) {
+        $message = 'Order status updated successfully!';
+    } else {
+        $message = 'Failed to update order status: ' . mysqli_error($conn);
+    }
+
+    mysqli_stmt_close($stmt);
+}
+
+
+if (isset($_POST['place_order'])) {
+    $user_id = $_SESSION['user']['id'];
+    $address = sanitizeInput($_POST['address']);
+    $payment_type = sanitizeInput($_POST['payment_type']);
+    $items = array();
+
+    foreach ($_POST['product'] as $product_id => $quantity) {
+        $product_query = mysqli_query($conn, "SELECT * FROM products WHERE id = '$product_id'");
+        $product_data = mysqli_fetch_assoc($product_query);
+
+        $items[] = array(
+            'id' => $product_id,
+            'name' => $product_data['name'],
+            'price' => $product_data['price'],
+            'quantity' => $quantity
+        );
+    }
+
+    $items_json = json_encode($items);
+    $insert_query = "INSERT INTO orders (user_id, address, payment_type, status, ordered_items) VALUES ('$user_id', '$address', '$payment_type', 'Pending', '$items_json')";
+    $insert_result = mysqli_query($conn, $insert_query);
+
+    if ($insert_result) {
+        $message = 'Order placed successfully!';
+    } else {
+        $message = 'Failed to place order.';
     }
 }
 
@@ -164,7 +228,6 @@ function generateUniqueFilename($originalFilename, $target_dir) {
 $products = mysqli_query($conn, "SELECT * FROM products");
 $orders = mysqli_query($conn, "SELECT * FROM orders");
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -271,6 +334,24 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
             margin-bottom: 10px;
             text-align: center;
         }
+        
+        .updateButton {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 10px 20px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        cursor: pointer;
+        border-radius: 4px;
+    }
+
+    .updateButton:hover {
+        background-color: #45a049;
+    }
     </style>
 </head>
 <body>
@@ -318,6 +399,7 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
                         <input type="text" name="category" placeholder="New Category">
                         <input type="submit" name="edit_product" value="Update">
                     </form>
+                    <br>
                     <form action="" method="post" class="actions-form">
                         <input type="hidden" name="product_id" value="<?php echo $product['id']; ?>">
                         <input type="submit" name="delete_product" value="Delete" onclick="return confirm('Are you sure you want to delete this product?');">
@@ -329,29 +411,54 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
     </table>
 
     <h2>Orders</h2>
-    <table>
-        <thead>
-            <tr>
-                <th>User ID</th>
-                <th>Address</th>
-                <th>Payment Type</th>
-                <th>Status</th>
-                <th>Ordered Items</th>
-                <th>Created At</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php while ($order = mysqli_fetch_assoc($orders)) { ?>
-            <tr>
-                <td><?php echo $order['user_id']; ?></td>
-                <td><?php echo $order['address']; ?></td>
-                <td><?php echo $order['payment_type']; ?></td>
-                <td><?php echo $order['status']; ?></td>
-                <td><?php echo json_encode($order['ordered_items']); ?></td>
-                <td><?php echo $order['created_at']; ?></td>
-            </tr>
-            <?php } ?>
-        </tbody>
-    </table>
+<table>
+    <thead>
+        <tr>
+            <th>User ID</th>
+            <th>Address</th>
+            <th>Payment Type</th>
+            <th>Status</th>
+            <th>Ordered Items</th>
+            <th>Created At</th>
+            <th>Action</th>
+        </tr>
+    </thead>
+    <tbody>
+        <?php while ($order = mysqli_fetch_assoc($orders)) { ?>
+        <tr>
+            <td><?php echo $order['user_id']; ?></td>
+            <td><?php echo $order['address']; ?></td>
+            <td><?php echo $order['payment_type']; ?></td>
+            <td>
+            <form action="" method="post" class="actions-form">
+            <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+            <select name="status">
+                <option value="Pending" <?php if ($order['status'] == 'Pending') echo 'selected'; ?>>Pending</option>
+                <option value="Order Accepted" <?php if ($order['status'] == 'Order Accepted') echo 'selected'; ?>>Order Accepted</option>
+                <option value="Order Declined" <?php if ($order['status'] == 'Order Declined') echo 'selected'; ?>>Order Declined</option>
+                <option value="Delivered" <?php if ($order['status'] == 'Delivered') echo 'selected'; ?>>Delivered</option>
+            </select>
+            <input type="submit" name="update_order" value="Update" class="updateButton">
+        </form> 
+            </td>
+            <td>
+                <?php
+                    $ordered_items = json_decode($order['ordered_items'], true);
+                    foreach ($ordered_items as $item) {
+                        echo "{$item['item_name']} - {$item['quantity']} <br>";
+                    }
+                ?>
+            </td>
+            <td><?php echo $order['created_at']; ?></td>
+            <td>
+                <form action="" method="post" class="actions-form">
+                    <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
+                    <input type="submit" name="delete_order" value="Delete" onclick="return confirm('Are you sure you want to delete this order?');">
+                </form>
+            </td>
+        </tr>
+        <?php } ?>
+    </tbody>
+</table>
 </body>
 </html>

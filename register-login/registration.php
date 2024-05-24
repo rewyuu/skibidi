@@ -298,7 +298,7 @@ if (isset($_SESSION["success"])) {
     </div>
     <script>
         function redirectHome() {
-            window.location.href = "../index.html";
+            window.location.href = "../index.php";
         }
 
         const passwordInput = document.getElementById('password');

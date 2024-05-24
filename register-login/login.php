@@ -243,7 +243,7 @@ if (isset($_SESSION["errors"]) && !empty($_SESSION["errors"])) {
     </div>
     <script>
         function redirectHome() {
-            window.location.href = "../index.html";
+            window.location.href = "../index.php";
         }
 
         const passwordInput = document.getElementById('password');

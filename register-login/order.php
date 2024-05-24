@@ -133,7 +133,7 @@ $conn->close();
             color: #fff;
             text-decoration: none;
             border-radius: 4px;
-            transition: background-color 0.3s ease;
+            transition: background-color     0.3s ease;
         }
 
         .home-button a:hover {
