@@ -55,6 +55,14 @@ if (isset($_POST['place_order'])) {
     $payment_method = $_POST['payment_method'];
     $address = $_POST['address'];
 
+    if ($number != $userPhone) {
+        $update_phone_query = "UPDATE users SET phone = ? WHERE id = ?";
+        $stmt = $conn->prepare($update_phone_query);
+        $stmt->bind_param("si", $number, $userID);
+        $stmt->execute();
+        $stmt->close();
+    }
+
     $insert_order_query = "INSERT INTO orders (user_id, address, payment_type, ordered_items) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($insert_order_query);
     $stmt->bind_param("isss", $userID, $address, $payment_method, json_encode($orderedItems));
@@ -72,7 +80,6 @@ if (isset($_POST['place_order'])) {
     updateCartCount($conn, $userID, $cartCount);
 
     $_SESSION['cart_count'] = 0;
-
     header('Location: order.php?order_id=' . $order_id);
     exit;
 }

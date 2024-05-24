@@ -226,7 +226,11 @@ function generateUniqueFilename($originalFilename, $target_dir) {
 }
 
 $products = mysqli_query($conn, "SELECT * FROM products");
-$orders = mysqli_query($conn, "SELECT * FROM orders");
+$orders = mysqli_query($conn, "SELECT orders.*, users.phone 
+                               FROM orders 
+                               JOIN users ON orders.user_id = users.id");
+$users = mysqli_query($conn, "SELECT * FROM users");
+
 ?>
 
 <!DOCTYPE html>
@@ -275,6 +279,29 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
 
         form input[type="submit"]:hover {
             background-color: #45a049;
+        }
+
+        form.actions-form select {
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            background-color: white;
+            color: #333;
+        }
+
+        .actions-form input[type="submit"][name="update_order"] {
+            padding: 6px 10px;
+            background-color: #4287f5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .actions-form input[type="submit"][name="update_order"]:hover {
+            background-color: #2c5aa7; 
         }
 
         table {
@@ -397,6 +424,7 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
     <thead>
         <tr>
             <th>User ID</th>
+            <th>User's Phone</th>
             <th>Address</th>
             <th>Payment Type</th>
             <th>Status</th>
@@ -409,6 +437,7 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
         <?php while ($order = mysqli_fetch_assoc($orders)) { ?>
         <tr>
             <td><?php echo $order['user_id']; ?></td>
+            <td><?php echo $order['phone']; ?></td>
             <td><?php echo $order['address']; ?></td>
             <td><?php echo $order['payment_type']; ?></td>
             <td>
@@ -442,5 +471,31 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
         <?php } ?>
     </tbody>
 </table>
+
+<h2>Registered Users</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Username</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Address</th>
+                <th>Cart Count</th>
+            </tr>
+        </thead>
+        <tbody>
+            <?php while ($user = mysqli_fetch_assoc($users)) { ?>
+            <tr>
+                <td><?php echo $user['id']; ?></td>
+                <td><?php echo $user['username']; ?></td>
+                <td><?php echo $user['email']; ?></td>
+                <td><?php echo $user['phone']; ?></td>
+                <td><?php echo $user['address']; ?></td>
+                <td><?php echo $user['cart_count']; ?></td>
+            </tr>
+            <?php } ?>
+        </tbody>
+    </table>
 </body>
 </html>

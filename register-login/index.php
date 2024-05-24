@@ -173,31 +173,31 @@ filterButtons.forEach(button => {
 });
 
 // for the food menu
-document.addEventListener('DOMContentLoaded', function () {
-  const filterButtons = document.querySelectorAll('.filter-btn');
-  const foodMenuCards = document.querySelectorAll('.food-menu-card');
+    document.addEventListener('DOMContentLoaded', function () {
+      const filterButtons = document.querySelectorAll('.filter-btn');
+      const foodMenuCards = document.querySelectorAll('.food-menu-card');
 
-foodMenuCards.forEach(card => {
-  card.classList.add('active');
-});
+    foodMenuCards.forEach(card => {
+      card.classList.add('active');
+    });
 
-filterButtons.forEach(button => {
-  button.addEventListener('click', function () {
-  const category = button.getAttribute('data-category');
+    filterButtons.forEach(button => {
+      button.addEventListener('click', function () {
+      const category = button.getAttribute('data-category');
 
-  filterButtons.forEach(btn => btn.classList.remove('active'));
-  button.classList.add('active');
+      filterButtons.forEach(btn => btn.classList.remove('active'));
+      button.classList.add('active');
 
-  foodMenuCards.forEach(card => {
-    if (category === 'all' || card.getAttribute('data-category') === category) {
-      card.classList.add('active'); 
-    } else {
-      card.classList.remove('active'); 
-    }
-  });
-});
-});
-});
+      foodMenuCards.forEach(card => {
+        if (category === 'All' || card.getAttribute('data-category') === category) {
+          card.classList.add('active'); 
+        } else {
+          card.classList.remove('active'); 
+        }
+      });
+    });
+    });
+    });
 </script>
 
       <button class="nav-toggle-btn" aria-label="Toggle Menu" data-menu-toggle-btn>
@@ -325,16 +325,16 @@ filterButtons.forEach(button => {
 
           <ul class="fiter-list">
             <li>
-              <button class="filter-btn  active" data-category="all">All</button>
+              <button class="filter-btn  active" data-category="All">All</button>
             </li>
             <li>
-              <button class="filter-btn" data-category="dishes" >Dishes</button>
+              <button class="filter-btn" data-category="Dishes" >Dishes</button>
             </li>
             <li>
-              <button class="filter-btn" data-category="add-ons">Add-ons</button>
+              <button class="filter-btn" data-category="Add-ons">Add-ons</button>
             </li>
             <li>
-              <button class="filter-btn" data-category="drinks">Drinks</button>
+              <button class="filter-btn" data-category="Drinks">Drinks</button>
             </li>
           </ul>
 
