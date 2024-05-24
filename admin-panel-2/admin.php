@@ -334,24 +334,6 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
             margin-bottom: 10px;
             text-align: center;
         }
-        
-        .updateButton {
-        background-color: #4CAF50;
-        border: none;
-        color: white;
-        padding: 10px 20px;
-        text-align: center;
-        text-decoration: none;
-        display: inline-block;
-        font-size: 16px;
-        margin: 4px 2px;
-        cursor: pointer;
-        border-radius: 4px;
-    }
-
-    .updateButton:hover {
-        background-color: #45a049;
-    }
     </style>
 </head>
 <body>
@@ -438,7 +420,7 @@ $orders = mysqli_query($conn, "SELECT * FROM orders");
                 <option value="Order Declined" <?php if ($order['status'] == 'Order Declined') echo 'selected'; ?>>Order Declined</option>
                 <option value="Delivered" <?php if ($order['status'] == 'Delivered') echo 'selected'; ?>>Delivered</option>
             </select>
-            <input type="submit" name="update_order" value="Update" class="updateButton">
+            <input type="submit" name="update_order" value="Update">
         </form> 
             </td>
             <td>
