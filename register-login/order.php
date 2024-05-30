@@ -17,7 +17,10 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['cancel_order'])) {
     exit();
 }
 
-$query = "SELECT * FROM orders WHERE user_id = ?";
+$query = "SELECT o.id, o.address as order_address, o.payment_type, o.status, o.ordered_items, o.created_at, u.full_name, u.phone 
+          FROM orders o 
+          INNER JOIN users u ON o.user_id = u.id
+          WHERE o.user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userID);
 $stmt->execute();
@@ -35,7 +38,6 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -133,7 +135,7 @@ $conn->close();
             color: #fff;
             text-decoration: none;
             border-radius: 4px;
-            transition: background-color     0.3s ease;
+            transition: background-color 0.3s ease;
         }
 
         .home-button a:hover {
@@ -175,8 +177,18 @@ $conn->close();
                     </div>
 
                     <div class="item-info">
+                        <span>Full Name:</span>
+                        <span><?php echo htmlspecialchars($order['full_name']); ?></span>
+                    </div>
+
+                    <div class="item-info">
+                        <span>Phone:</span>
+                        <span><?php echo htmlspecialchars($order['phone']); ?></span>
+                    </div>
+
+                    <div class="item-info">
                         <span>Address:</span>
-                        <span><?php echo $order['address']; ?></span>
+                        <span><?php echo htmlspecialchars($order['order_address']); ?></span>
                     </div>
 
                     <div class="item-info">
