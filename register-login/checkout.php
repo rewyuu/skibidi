@@ -108,25 +108,25 @@ if (isset($_POST['place_order'])) {
 
     $insert_order_query = "INSERT INTO orders (user_id, address, payment_type, ordered_items, total_price) VALUES (?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($insert_order_query);
-    $stmt->bind_param("isssd", $userID, $address, $payment_method, json_encode($orderedItems), $totalPriceWithVat);
-    $stmt->execute();
-    $order_id = $stmt->insert_id;
-    $stmt->close();
+        $stmt->bind_param("isssd", $userID, $address, $payment_method, json_encode($orderedItems), $totalPriceWithVat);
+        $stmt->execute();
+        $order_id = $stmt->insert_id;
+        $stmt->close();
 
-    $clear_cart_query = "DELETE FROM cart_items WHERE user_id = ?";
-    $stmt = $conn->prepare($clear_cart_query);
-    $stmt->bind_param("i", $userID);
-    $stmt->execute();
-    $stmt->close();
+        $clear_cart_query = "DELETE FROM cart_items WHERE user_id = ?";
+        $stmt = $conn->prepare($clear_cart_query);
+        $stmt->bind_param("i", $userID);
+        $stmt->execute();
+        $stmt->close();
 
-    $cartCount = 0;
-    updateCartCount($conn, $userID, $cartCount);
+        $cartCount = 0;
+        updateCartCount($conn, $userID, $cartCount);
 
-    $_SESSION['cart_count'] = 0;
+        $_SESSION['cart_count'] = 0;
 
-    header('Location: order.php?order_id=' . $order_id);
-    exit;
-}
+        header('Location: order.php?order_id=' . $order_id);
+        exit;
+    }
 
 $conn->close();
 ?>
@@ -258,25 +258,54 @@ $conn->close();
             flex-shrink: 0;
             margin-left: 10px;
         }
+
+        .toggle-content {
+            display: none;
+            margin-top: 10px;
+        }
+
+        .toggle-content input {
+            margin-bottom: 10px;
+        }
     </style>
     <script>
         function toggleSeniorDiscount() {
             const checkbox = document.getElementById('senior-checkbox');
-            const isChecked = checkbox.checked;
-            if (isChecked) {
-                window.location.href = window.location.pathname + '?senior_pwd=1';
+            const discountInfo = document.getElementById('discount-info');
+            if (checkbox.checked) {
+                discountInfo.style.display = 'block';
             } else {
-                window.location.href = window.location.pathname;
+                discountInfo.style.display = 'none';
             }
         }
+
+        function togglePhoneFields() {
+            const checkbox = document.getElementById('use-different-number');
+            const phoneFields = document.getElementById('phone-fields');
+            if (checkbox.checked) {
+                phoneFields.style.display = 'block';
+            } else {
+                phoneFields.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('input[name="address_option"]').forEach((elem) => {
+                elem.addEventListener('change', function () {
+                    const newAddressFields = document.getElementById('new-address-fields');
+                    if (this.value === 'new') {
+                        newAddressFields.style.display = 'block';
+                    } else {
+                        newAddressFields.style.display = 'none';
+                    }
+                });
+            });
+        });
     </script>
 </head>
 <body>
 
 <div class="container">
-    <div class="home-button">
-        <a href="index.php"><i class="fas fa-home"></i> Home</a>
-    </div>
     <h1 class="heading">Checkout</h1>
 
     <div class="order-summary">
@@ -287,43 +316,40 @@ $conn->close();
                     <th>Item</th>
                     <th>Price</th>
                     <th>Quantity</th>
-                    <th>Total Price</th>
+                    <th>Total</th>
                 </tr>
             </thead>
             <tbody>
-                <?php foreach ($cartItems as $item): ?>
+                <?php foreach ($cartItems as $item) { ?>
                     <tr>
                         <td><?php echo htmlspecialchars($item['item_name']); ?></td>
-                        <td><?php echo 'P' . number_format($item['item_price'], 2); ?></td>
+                        <td><?php echo htmlspecialchars(number_format($item['item_price'], 2)); ?></td>
                         <td><?php echo htmlspecialchars($item['quantity']); ?></td>
-                        <td><?php echo 'P' . number_format($item['item_price'] * $item['quantity'], 2); ?></td>
+                        <td><?php echo htmlspecialchars(number_format($item['item_price'] * $item['quantity'], 2)); ?></td>
                     </tr>
-                <?php endforeach; ?>
-                <tr>
-                    <td colspan="3">Total Price</td>
-                    <td><?php echo 'P' . number_format($totalPrice, 2); ?></td>
-                </tr>
-                <tr>
-                    <td colspan="3">VAT (12%)</td>
-                    <td><?php echo 'P' . number_format($vatAmount, 2); ?></td>
-                </tr>
-                <?php if ($isSeniorOrPwd): ?>
-                    <tr>
-                        <td colspan="3">Senior/PWD Discount (20%)</td>
-                        <td>-<?php echo 'P' . number_format($discountAmount, 2); ?></td>
-                    </tr>
-                <?php endif; ?>
-                <tr>
-                    <td colspan="3"><strong>Grand Total</strong></td>
-                    <td><strong><?php echo 'P' . number_format($totalPriceWithVat, 2); ?></strong></td>
-                </tr>
+                <?php } ?>
             </tbody>
+            <tfoot>
+                <tr>
+                    <th colspan="3">Subtotal</th>
+                    <td><?php echo htmlspecialchars(number_format($totalPrice, 2)); ?></td>
+                </tr>
+                <tr>
+                    <th colspan="3">VAT (<?php echo htmlspecialchars($vatRate * 100); ?>%)</th>
+                    <td><?php echo htmlspecialchars(number_format($vatAmount, 2)); ?></td>
+                </tr>
+                <?php if ($isSeniorOrPwd) { ?>
+                    <tr>
+                        <th colspan="3">Senior/PWD Discount (<?php echo htmlspecialchars($seniorDiscountRate * 100); ?>%)</th>
+                        <td><?php echo htmlspecialchars(number_format($discountAmount, 2)); ?></td>
+                    </tr>
+                <?php } ?>
+                <tr>
+                    <th colspan="3">Total</th>
+                    <td><?php echo htmlspecialchars(number_format($totalPriceWithVat, 2)); ?></td>
+                </tr>
+            </tfoot>
         </table>
-    </div>
-    <div>
-            <label>
-                <input type="checkbox" id="senior-checkbox" name="is_senior_or_pwd" value="1" <?php echo $isSeniorOrPwd ? 'checked' : ''; ?> onclick="toggleSeniorDiscount()"> I am a Senior/PWD
-        </label>
     </div>
 
     <div class="checkout-form">
@@ -339,14 +365,49 @@ $conn->close();
                 <input type="email" name="email" value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Your Email" required>
             </div>
             <div class="inputBox">
-                <select name="payment_method" required> 
+                <select name="payment_method" required>
                     <option value="">Select Payment Method</option>
                     <option value="Cash on Delivery">Cash on Delivery</option>
                     <option value="Gcash">Gcash</option>
                 </select>
             </div>
-            <div class="inputBox">
-                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" readonly>
+            <div>
+                <label>
+                    <input type="checkbox" id="senior-checkbox" name="is_senior_or_pwd" value="1" <?php echo $isSeniorOrPwd ? 'checked' : ''; ?> onclick="toggleSeniorDiscount()"> I am a Senior/PWD
+                </label>
+            </div>
+            <div>
+                <label>
+                    <input type="radio" name="address_option" value="current" checked> Use Current Address: <?php echo htmlspecialchars($userAddress); ?>
+                </label>
+                <br>
+                <label>
+                    <input type="radio" name="address_option" value="new"> Use New Address
+                </label>
+            </div>
+            <div id="new-address-fields" style="display: none;">
+                <div class="inputBox">
+                    <input type="text" name="street" placeholder="Street">
+                </div>
+                <div class="inputBox">
+                    <input type="text" name="city" placeholder="City">
+                </div>
+                <div class="inputBox">
+                    <input type="text" name="zipcode" placeholder="Zip Code">
+                </div>
+                <div class="inputBox">
+                    <input type="text" name="region" placeholder="Region">
+                </div>
+            </div>
+            <div>
+                <label>
+                    <input type="checkbox" id="use-different-number" name="use_different_number" onclick="togglePhoneFields()"> Use Different Phone Number
+                </label>
+            </div>
+            <div id="phone-fields" style="display: none;">
+                <div class="inputBox">
+                    <input type="tel" name="new_number" placeholder="New Phone Number">
+                </div>
             </div>
             <div class="side-by-side">
                 <input type="submit" name="place_order" value="Place Order" class="btn">
