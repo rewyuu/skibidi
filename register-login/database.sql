@@ -46,7 +46,7 @@ CREATE TABLE `orders` (
     `user_id` INT NOT NULL,
     `address` VARCHAR(255) NOT NULL,
     `payment_type` VARCHAR(50) NOT NULL,
-    `status` ENUM('Pending', 'Order Accepted' , 'Order Declined' , 'Delivered', 'Cancelled') DEFAULT 'Pending',
+    `status` ENUM('Pending', 'Order Accepted' , 'Order Declined' , 'Delivered', 'On Delivery' , 'Cancelled') DEFAULT 'Pending',
     `ordered_items` JSON NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
