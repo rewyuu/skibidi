@@ -4,19 +4,19 @@ include('database.php');
 
 $userID = $_SESSION['user']['id'];
 
-// Fetch user details from the database
-$query = "SELECT address, email, phone FROM users WHERE id = ?";
+$query = "SELECT full_name, address, email, phone, is_senior_or_pwd FROM users WHERE id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userID);
 $stmt->execute();
 $result = $stmt->get_result();
 $user = $result->fetch_assoc();
+$userName = $user['full_name'];
 $userAddress = $user['address'];
 $userEmail = $user['email'];
 $userPhone = $user['phone'];
+$isSeniorOrPwd = isset($_GET['senior_pwd']) ? 1 : $user['is_senior_or_pwd'];
 $stmt->close();
 
-// Fetch cart items for the current user
 $query = "SELECT * FROM cart_items WHERE user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userID);
@@ -27,10 +27,8 @@ $cartItems = [];
 while ($row = $result->fetch_assoc()) {
     $cartItems[] = $row;
 }
-
 $stmt->close();
 
-// Calculate total price and prepare ordered items for insertion into orders table
 $totalPrice = 0;
 $orderedItems = [];
 
@@ -43,7 +41,19 @@ foreach ($cartItems as $item) {
     ];
 }
 
-// Function to update cart count for the user
+$vatRate = 0.12; 
+$seniorDiscountRate = 0.20; 
+
+$vatAmount = $totalPrice * $vatRate;
+$totalPriceWithVat = $totalPrice + $vatAmount;
+
+if ($isSeniorOrPwd) {
+    $discountAmount = $totalPriceWithVat * $seniorDiscountRate;
+    $totalPriceWithVat -= $discountAmount;
+} else {
+    $discountAmount = 0;
+}
+
 function updateCartCount($conn, $userID, $cartCount) {
     $query = "UPDATE users SET cart_count = ? WHERE id = ?";
     $stmt = $conn->prepare($query);
@@ -52,27 +62,23 @@ function updateCartCount($conn, $userID, $cartCount) {
     $stmt->close();
 }
 
-// Process order placement
 if (isset($_POST['place_order'])) {
     $name = $_POST['name'];
     $email = $_POST['email'];
     $payment_method = $_POST['payment_method'];
 
-    // Determine phone number based on user selection
     if (isset($_POST['use_different_number'])) {
         $phone = $_POST['new_number'];
     } else {
         $phone = $userPhone;
     }
 
-    // Determine address based on user selection
     if ($_POST['address_option'] === 'new') {
         $address = $_POST['street'] . ', ' . $_POST['city'] . ', ' . $_POST['zipcode'] . ', ' . $_POST['region'];
     } else {
         $address = $userAddress;
     }
 
-    // Update phone number in the users table if it's changed
     if ($phone !== $userPhone) {
         $update_phone_query = "UPDATE users SET phone = ? WHERE id = ?";
         $stmt = $conn->prepare($update_phone_query);
@@ -81,39 +87,49 @@ if (isset($_POST['place_order'])) {
         $stmt->close();
     }
 
-    // Insert order details into orders table
-    $insert_order_query = "INSERT INTO orders (user_id, address, payment_type, ordered_items) VALUES (?, ?, ?, ?)";
+    if ($name !== $userName) {
+        $update_name_query = "UPDATE users SET full_name = ? WHERE id = ?";
+        $stmt = $conn->prepare($update_name_query);
+        $stmt->bind_param("si", $name, $userID);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    if (isset($_POST['is_senior_or_pwd'])) {
+        $isSeniorOrPwd = 1;
+        $discountAmount = $totalPriceWithVat * $seniorDiscountRate;
+        $totalPriceWithVat -= $discountAmount;
+        $update_senior_query = "UPDATE users SET is_senior_or_pwd = ? WHERE id = ?";
+        $stmt = $conn->prepare($update_senior_query);
+        $stmt->bind_param("ii", $isSeniorOrPwd, $userID);
+        $stmt->execute();
+        $stmt->close();
+    }
+
+    $insert_order_query = "INSERT INTO orders (user_id, address, payment_type, ordered_items, total_price) VALUES (?, ?, ?, ?, ?)";
     $stmt = $conn->prepare($insert_order_query);
-    $stmt->bind_param("isss", $userID, $address, $payment_method, json_encode($orderedItems));
+    $stmt->bind_param("isssd", $userID, $address, $payment_method, json_encode($orderedItems), $totalPriceWithVat);
     $stmt->execute();
     $order_id = $stmt->insert_id;
     $stmt->close();
 
-    // Clear cart items for the user
     $clear_cart_query = "DELETE FROM cart_items WHERE user_id = ?";
     $stmt = $conn->prepare($clear_cart_query);
     $stmt->bind_param("i", $userID);
     $stmt->execute();
     $stmt->close();
 
-    // Update cart count to 0 for the user
     $cartCount = 0;
     updateCartCount($conn, $userID, $cartCount);
 
-    // Reset cart count in session
     $_SESSION['cart_count'] = 0;
 
-    // Redirect to order confirmation page
     header('Location: order.php?order_id=' . $order_id);
     exit;
 }
 
-// Close database connection
 $conn->close();
 ?>
-
-
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -231,7 +247,29 @@ $conn->close();
         .home-button a:hover {
             background-color: #0056b3;
         }
+
+        .side-by-side {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .side-by-side .btn {
+            flex-shrink: 0;
+            margin-left: 10px;
+        }
     </style>
+    <script>
+        function toggleSeniorDiscount() {
+            const checkbox = document.getElementById('senior-checkbox');
+            const isChecked = checkbox.checked;
+            if (isChecked) {
+                window.location.href = window.location.pathname + '?senior_pwd=1';
+            } else {
+                window.location.href = window.location.pathname;
+            }
+        }
+    </script>
 </head>
 <body>
 
@@ -262,86 +300,60 @@ $conn->close();
                     </tr>
                 <?php endforeach; ?>
                 <tr>
-                    <td colspan="3">Grand Total</td>
+                    <td colspan="3">Total Price</td>
                     <td><?php echo 'P' . number_format($totalPrice, 2); ?></td>
+                </tr>
+                <tr>
+                    <td colspan="3">VAT (12%)</td>
+                    <td><?php echo 'P' . number_format($vatAmount, 2); ?></td>
+                </tr>
+                <?php if ($isSeniorOrPwd): ?>
+                    <tr>
+                        <td colspan="3">Senior/PWD Discount (20%)</td>
+                        <td>-<?php echo 'P' . number_format($discountAmount, 2); ?></td>
+                    </tr>
+                <?php endif; ?>
+                <tr>
+                    <td colspan="3"><strong>Grand Total</strong></td>
+                    <td><strong><?php echo 'P' . number_format($totalPriceWithVat, 2); ?></strong></td>
                 </tr>
             </tbody>
         </table>
+    </div>
+    <div>
+            <label>
+                <input type="checkbox" id="senior-checkbox" name="is_senior_or_pwd" value="1" <?php echo $isSeniorOrPwd ? 'checked' : ''; ?> onclick="toggleSeniorDiscount()"> I am a Senior/PWD
+        </label>
     </div>
 
     <div class="checkout-form">
         <h2>Complete Your Order</h2>
         <form action="" method="POST">
-            <!-- User name -->
             <div class="inputBox">
-                <input type="text" name="name" placeholder="Your Name" required>
+                <input type="text" name="name" value="<?php echo htmlspecialchars($userName); ?>" placeholder="Your Name" required>
             </div>
-
-            <!-- User email -->
+            <div class="inputBox">
+                <input type="tel" name="number" value="<?php echo htmlspecialchars($userPhone); ?>" placeholder="Your Phone Number" readonly>
+            </div>
             <div class="inputBox">
                 <input type="email" name="email" value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Your Email" required>
             </div>
-
-            <!-- Phone number options -->
             <div class="inputBox">
-                <label><input type="checkbox" name="use_different_number" id="use_different_number"> Use Different Phone Number</label>
-            </div>
-            <div class="inputBox" id="new_number_box" style="display: none;">
-                <input type="tel" name="new_number" placeholder="New Phone Number">
-            </div>
-
-            <!-- Address options -->
-            <div class="inputBox">
-                <label><input type="radio" name="address_option" value="saved" checked> Use Saved Address</label>
-                <label><input type="radio" name="address_option" value="new"> Enter New Address</label>
-            </div>
-            <div class="inputBox" id="saved-address">
-                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" readonly>
-            </div>
-            <div class="inputBox" id="new-address" style="display: none;">
-                <input type="text" name="street" placeholder="Street" required>
-                <input type="text" name="city" placeholder="City" required>
-                <input type="text" name="zipcode" placeholder="Zip Code" required>
-                <input type="text" name="region" placeholder="Region" required>
-            </div>
-
-            <!-- Payment method -->
-            <div class="inputBox">
-                <select name="payment_method" required>
+                <select name="payment_method" required> 
                     <option value="">Select Payment Method</option>
                     <option value="Cash on Delivery">Cash on Delivery</option>
                     <option value="Gcash">Gcash</option>
                 </select>
             </div>
-
-            <!-- Place order button -->
-            <input type="submit" name="place_order" value="Place Order" class="btn">
+            <div class="inputBox">
+                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" readonly>
+            </div>
+            <div class="side-by-side">
+                <input type="submit" name="place_order" value="Place Order" class="btn">
+            </div>
         </form>
     </div>
 </div>
-
-<!-- JavaScript to toggle phone number input -->
-<script>
-    document.getElementById('use_different_number').addEventListener('change', function() {
-        var newNumberBox = document.getElementById('new_number_box');
-        newNumberBox.style.display = this.checked ? 'block' : 'none';
-    });
-    
-    document.querySelectorAll('input[name="address_option"]').forEach(function(radio) {
-        radio.addEventListener('change', function() {
-            var savedAddressBox = document.getElementById('saved-address');
-            var newAddressBox = document.getElementById('new-address');
-            
-            if (this.value === 'saved') {
-                savedAddressBox.style.display = 'block';
-                newAddressBox.style.display = 'none';
-            } else if (this.value === 'new') {
-                savedAddressBox.style.display = 'none';
-                newAddressBox.style.display = 'block';
-            }
-        });
-    });
-</script>
 
 </body>
 </html>

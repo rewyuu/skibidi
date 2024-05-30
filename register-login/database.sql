@@ -23,11 +23,13 @@ SET time_zone = "+00:00";
 CREATE TABLE `users` (
     `id` INT AUTO_INCREMENT PRIMARY KEY,
     `username` VARCHAR(128) NOT NULL,
+    `full_name` VARCHAR(255) NOT NULL,
     `email` VARCHAR(255) NOT NULL UNIQUE,
     `password` VARCHAR(255) NOT NULL,
     `phone` VARCHAR(15) NOT NULL,
     `address` VARCHAR(255) NOT NULL,
-    `cart_count` INT NOT NULL DEFAULT 0
+    `cart_count` INT NOT NULL DEFAULT 0,
+    `is_senior_or_pwd` BOOLEAN NOT NULL DEFAULT FALSE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- table for cart items
@@ -46,6 +48,7 @@ CREATE TABLE `orders` (
     `user_id` INT NOT NULL,
     `address` VARCHAR(255) NOT NULL,
     `payment_type` VARCHAR(50) NOT NULL,
+    `total_price` DECIMAL(10, 2) NOT NULL,
     `status` ENUM('Pending', 'Order Accepted' , 'Order Declined' , 'Delivered', 'On Delivery' , 'Cancelled') DEFAULT 'Pending',
     `ordered_items` JSON NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
