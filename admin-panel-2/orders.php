@@ -237,8 +237,8 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
         </tbody>
     </table>
 
-    <!-- Delivered Orders -->
-    <h3>Delivered Orders</h3>
+    <!-- On Delivery Orders -->
+    <h3>On Delivery</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -251,7 +251,7 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
             </tr>
         </thead>
         <tbody>
-            <?php while ($order = mysqli_fetch_assoc($delivered_orders)): ?>
+            <?php while ($order = mysqli_fetch_assoc($on_delivery_orders)): ?>
             <tr>
                 <td><?php echo $order['id']; ?></td>
                 <td><?php echo $order['phone']; ?></td>
@@ -289,8 +289,8 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
         </tbody>
     </table>
 
-    <!-- Declined Orders -->
-    <h3>On Delivery</h3>
+    <!-- Delivered Orders -->
+    <h3>Delivered Orders</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -303,7 +303,7 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
             </tr>
         </thead>
         <tbody>
-            <?php while ($order = mysqli_fetch_assoc($on_delivery_orders)): ?>
+            <?php while ($order = mysqli_fetch_assoc($delivered_orders)): ?>
             <tr>
                 <td><?php echo $order['id']; ?></td>
                 <td><?php echo $order['phone']; ?></td>
