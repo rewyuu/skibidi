@@ -57,7 +57,8 @@ CREATE TABLE `products` (
     `name` VARCHAR(255) NOT NULL,
     `price` DECIMAL(10, 2) NOT NULL,
     `image` VARCHAR(255) NOT NULL,
-    `category` VARCHAR(50) NOT NULL
+    `category` VARCHAR(50) NOT NULL,
+    `total_price` DECIMAL(10, 2) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- insert cmds

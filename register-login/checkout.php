@@ -4,7 +4,8 @@ include('database.php');
 
 $userID = $_SESSION['user']['id'];
 
-$query = "SELECT address, email, phone FROM users WHERE id = ? ";
+// Fetch user details from the database
+$query = "SELECT address, email, phone FROM users WHERE id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userID);
 $stmt->execute();
@@ -15,7 +16,8 @@ $userEmail = $user['email'];
 $userPhone = $user['phone'];
 $stmt->close();
 
-$query = "SELECT * FROM cart_items WHERE user_id = ? ";
+// Fetch cart items for the current user
+$query = "SELECT * FROM cart_items WHERE user_id = ?";
 $stmt = $conn->prepare($query);
 $stmt->bind_param("i", $userID);
 $stmt->execute();
@@ -28,6 +30,7 @@ while ($row = $result->fetch_assoc()) {
 
 $stmt->close();
 
+// Calculate total price and prepare ordered items for insertion into orders table
 $totalPrice = 0;
 $orderedItems = [];
 
@@ -40,6 +43,7 @@ foreach ($cartItems as $item) {
     ];
 }
 
+// Function to update cart count for the user
 function updateCartCount($conn, $userID, $cartCount) {
     $query = "UPDATE users SET cart_count = ? WHERE id = ?";
     $stmt = $conn->prepare($query);
@@ -48,21 +52,36 @@ function updateCartCount($conn, $userID, $cartCount) {
     $stmt->close();
 }
 
+// Process order placement
 if (isset($_POST['place_order'])) {
     $name = $_POST['name'];
-    $number = $_POST['number'];
     $email = $_POST['email'];
     $payment_method = $_POST['payment_method'];
-    $address = $_POST['address'];
 
-    if ($number != $userPhone) {
+    // Determine phone number based on user selection
+    if (isset($_POST['use_different_number'])) {
+        $phone = $_POST['new_number'];
+    } else {
+        $phone = $userPhone;
+    }
+
+    // Determine address based on user selection
+    if ($_POST['address_option'] === 'new') {
+        $address = $_POST['street'] . ', ' . $_POST['city'] . ', ' . $_POST['zipcode'] . ', ' . $_POST['region'];
+    } else {
+        $address = $userAddress;
+    }
+
+    // Update phone number in the users table if it's changed
+    if ($phone !== $userPhone) {
         $update_phone_query = "UPDATE users SET phone = ? WHERE id = ?";
         $stmt = $conn->prepare($update_phone_query);
-        $stmt->bind_param("si", $number, $userID);
+        $stmt->bind_param("si", $phone, $userID);
         $stmt->execute();
         $stmt->close();
     }
 
+    // Insert order details into orders table
     $insert_order_query = "INSERT INTO orders (user_id, address, payment_type, ordered_items) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($insert_order_query);
     $stmt->bind_param("isss", $userID, $address, $payment_method, json_encode($orderedItems));
@@ -70,22 +89,31 @@ if (isset($_POST['place_order'])) {
     $order_id = $stmt->insert_id;
     $stmt->close();
 
+    // Clear cart items for the user
     $clear_cart_query = "DELETE FROM cart_items WHERE user_id = ?";
     $stmt = $conn->prepare($clear_cart_query);
     $stmt->bind_param("i", $userID);
     $stmt->execute();
     $stmt->close();
 
+    // Update cart count to 0 for the user
     $cartCount = 0;
     updateCartCount($conn, $userID, $cartCount);
 
+    // Reset cart count in session
     $_SESSION['cart_count'] = 0;
+
+    // Redirect to order confirmation page
     header('Location: order.php?order_id=' . $order_id);
     exit;
 }
 
+// Close database connection
 $conn->close();
 ?>
+
+
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -244,28 +272,76 @@ $conn->close();
     <div class="checkout-form">
         <h2>Complete Your Order</h2>
         <form action="" method="POST">
+            <!-- User name -->
             <div class="inputBox">
                 <input type="text" name="name" placeholder="Your Name" required>
             </div>
-            <div class="inputBox">
-                <input type="tel" name="number" value="<?php echo htmlspecialchars($userPhone); ?>" placeholder="Your Phone Number" required>
-            </div>
+
+            <!-- User email -->
             <div class="inputBox">
                 <input type="email" name="email" value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Your Email" required>
             </div>
+
+            <!-- Phone number options -->
+            <div class="inputBox">
+                <label><input type="checkbox" name="use_different_number" id="use_different_number"> Use Different Phone Number</label>
+            </div>
+            <div class="inputBox" id="new_number_box" style="display: none;">
+                <input type="tel" name="new_number" placeholder="New Phone Number">
+            </div>
+
+            <!-- Address options -->
+            <div class="inputBox">
+                <label><input type="radio" name="address_option" value="saved" checked> Use Saved Address</label>
+                <label><input type="radio" name="address_option" value="new"> Enter New Address</label>
+            </div>
+            <div class="inputBox" id="saved-address">
+                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" readonly>
+            </div>
+            <div class="inputBox" id="new-address" style="display: none;">
+                <input type="text" name="street" placeholder="Street" required>
+                <input type="text" name="city" placeholder="City" required>
+                <input type="text" name="zipcode" placeholder="Zip Code" required>
+                <input type="text" name="region" placeholder="Region" required>
+            </div>
+
+            <!-- Payment method -->
             <div class="inputBox">
                 <select name="payment_method" required>
+                    <option value="">Select Payment Method</option>
                     <option value="Cash on Delivery">Cash on Delivery</option>
                     <option value="Gcash">Gcash</option>
                 </select>
             </div>
-            <div class="inputBox">
-                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" required>
-            </div>
+
+            <!-- Place order button -->
             <input type="submit" name="place_order" value="Place Order" class="btn">
         </form>
     </div>
 </div>
+
+<!-- JavaScript to toggle phone number input -->
+<script>
+    document.getElementById('use_different_number').addEventListener('change', function() {
+        var newNumberBox = document.getElementById('new_number_box');
+        newNumberBox.style.display = this.checked ? 'block' : 'none';
+    });
+    
+    document.querySelectorAll('input[name="address_option"]').forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            var savedAddressBox = document.getElementById('saved-address');
+            var newAddressBox = document.getElementById('new-address');
+            
+            if (this.value === 'saved') {
+                savedAddressBox.style.display = 'block';
+                newAddressBox.style.display = 'none';
+            } else if (this.value === 'new') {
+                savedAddressBox.style.display = 'none';
+                newAddressBox.style.display = 'block';
+            }
+        });
+    });
+</script>
 
 </body>
 </html>

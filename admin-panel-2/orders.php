@@ -1,28 +1,25 @@
 <?php
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['update_order'])) {
+
         $order_id = sanitizeInput($_POST['order_id']);
         $status = sanitizeInput($_POST['status']);
 
         $sql = "UPDATE orders SET status = '$status' WHERE id = '$order_id'";
         if (mysqli_query($conn, $sql)) {
             $message = "Order status updated successfully.";
-            header("Location: admin.php?page=orders");
-            exit;
-        } else {
+        } 
+        else {
             $message = "Error updating order status: " . mysqli_error($conn);
         }
+            header("Location: admin.php?page=orders");
+            exit;
     }
+}
 
-    if (isset($_POST['delete_order'])) {
-        $order_id = sanitizeInput($_POST['order_id']);
-        $sql = "DELETE FROM orders WHERE id = '$order_id'";
-        if (mysqli_query($conn, $sql)) {
-            $message = "Order deleted successfully.";
-        } else {
-            $message = "Error deleting order: " . mysqli_error($conn);
-        }
-    }
+if (isset($_SESSION['message'])) {
+    $message = $_SESSION['message'];
+    unset($_SESSION['message']);
 }
 
 $pending_orders = mysqli_query($conn, "SELECT orders.*, users.phone 
@@ -68,9 +65,9 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
 <div class="container">
     <h2>Manage Orders</h2>
 
-    <?php if ($message): ?>
+     <?php if (!empty($message)): ?>
         <div class="alert alert-success"><?php echo $message; ?></div>
-    <?php endif; ?>
+    <?php endif; ?> 
 
     <div class="mb-3">
         <a href="#pending" class="btn btn-primary mr-2">Pending Orders</a>
@@ -82,7 +79,7 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
     </div>
 
     <!-- Pending Orders -->
-    <h3>Pending Orders</h3>
+    <h3 id="pending">Pending Orders</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -91,7 +88,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                 <th>Status</th>
                 <th>Ordered Items</th>
                 <th>Created At</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -122,19 +118,13 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                     ?>
                 </td>
                 <td><?php echo $order['created_at']; ?></td>
-                <td>
-                    <form action="admin.php?page=orders" method="post" class="d-inline-block">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <button type="submit" name="delete_order" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
-                    </form>
-                </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 
     <!-- Accepted Orders -->
-    <h3>Accepted Orders</h3>
+    <h3 id="accepted">Accepted Orders</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -143,7 +133,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                 <th>Status</th>
                 <th>Ordered Items</th>
                 <th>Created At</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -174,19 +163,13 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                     ?>
                 </td>
                 <td><?php echo $order['created_at']; ?></td>
-                <td>
-                    <form action="admin.php?page=orders" method="post" class="d-inline-block">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <button type="submit" name="delete_order" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
-                    </form>
-                </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 
     <!-- Declined Orders -->
-    <h3>Declined Orders</h3>
+    <h3 id="declined">Declined Orders</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -195,7 +178,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                 <th>Status</th>
                 <th>Ordered Items</th>
                 <th>Created At</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -226,19 +208,13 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                     ?>
                 </td>
                 <td><?php echo $order['created_at']; ?></td>
-                <td>
-                    <form action="admin.php?page=orders" method="post" class="d-inline-block">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <button type="submit" name="delete_order" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
-                    </form>
-                </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 
     <!-- On Delivery Orders -->
-    <h3>On Delivery</h3>
+    <h3 id="on_delivery">On Delivery</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -247,7 +223,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                 <th>Status</th>
                 <th>Ordered Items</th>
                 <th>Created At</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -278,19 +253,13 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                     ?>
                 </td>
                 <td><?php echo $order['created_at']; ?></td>
-                <td>
-                    <form action="admin.php?page=orders" method="post" class="d-inline-block">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <button type="submit" name="delete_order" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
-                    </form>
-                </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 
     <!-- Delivered Orders -->
-    <h3>Delivered Orders</h3>
+    <h3 id="delivered">Delivered Orders</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -299,7 +268,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                 <th>Status</th>
                 <th>Ordered Items</th>
                 <th>Created At</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -330,19 +298,13 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                     ?>
                 </td>
                 <td><?php echo $order['created_at']; ?></td>
-                <td>
-                    <form action="admin.php?page=orders" method="post" class="d-inline-block">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <button type="submit" name="delete_order" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
-                    </form>
-                </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
     </table>
 
     <!-- Cancelled Orders -->
-    <h3>Cancelled Orders</h3>
+    <h3 id="cancelled">Cancelled Orders</h3>
     <table class="table table-bordered">
         <thead>
             <tr>
@@ -351,7 +313,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                 <th>Status</th>
                 <th>Ordered Items</th>
                 <th>Created At</th>
-                <th>Actions</th>
             </tr>
         </thead>
         <tbody>
@@ -382,12 +343,6 @@ $cancelled_orders = mysqli_query($conn, "SELECT orders.*, users.phone
                     ?>
                 </td>
                 <td><?php echo $order['created_at']; ?></td>
-                <td>
-                    <form action="admin.php?page=orders" method="post" class="d-inline-block">
-                        <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
-                        <button type="submit" name="delete_order" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this order?');">Delete</button>
-                    </form>
-                </td>
             </tr>
             <?php endwhile; ?>
         </tbody>
