@@ -26,6 +26,18 @@ if (isset($_POST["submit"])) {
     if (strlen($password) < 8) {
         array_push($errors, "Password must be at least 8 characters long");
     }
+    if (!preg_match("/[A-Z]/", $password)) {
+        array_push($errors, "Password must contain at least one uppercase letter");
+    }
+    if (!preg_match("/[0-9]/", $password)) {
+        array_push($errors, "Password must contain at least one number");
+    }
+    if (!preg_match("/[!@#$%^&*()\-_=+{};:,<.>]/", $password)) {
+        array_push($errors, "Password must contain at least one special character");
+    }
+    if ($password !== $passwordRepeat) {
+        array_push($errors, "Passwords do not match");
+    }
     if ($password !== $passwordRepeat) {
         array_push($errors, "Passwords do not match");
     }
@@ -146,6 +158,7 @@ if (isset($_POST["submit"])) {
 
         .alert {
             font-size: 20px;
+            padding: 40px;
             position: fixed;
             top: 100px;
             left: 50px;

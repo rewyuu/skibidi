@@ -66,23 +66,20 @@ if (isset($_POST['place_order'])) {
     $name = $_POST['name'];
     $email = $_POST['email'];
     $payment_method = $_POST['payment_method'];
-    $phone = $userPhone;
+
+    if (isset($_POST['use_different_number'])) {
+        $phone = $_POST['new_number'];
+    } else {
+        $phone = $userPhone;
+    }
 
     if ($_POST['address_option'] === 'new') {
-        $address = $_POST['new_street'] . ', ' . $_POST['new_city'] . ', ' . $_POST['new_zipcode'] . ', ' . $_POST['new_region'];
-        $phone = $_POST['new_phone'];
-        
-        $update_address_query = "UPDATE users SET address = ?, phone = ? WHERE id = ?";
-        $stmt = $conn->prepare($update_address_query);
-        $stmt->bind_param("ssi", $address, $phone, $userID);
-        $stmt->execute();
-        $stmt->close();
+        $address = $_POST['street'] . ', ' . $_POST['city'] . ', ' . $_POST['zipcode'] . ', ' . $_POST['region'];
     } else {
         $address = $userAddress;
     }
 
-    if ($_POST['phone_option'] === 'new' && !empty($_POST['new_phone'])) {
-        $phone = $_POST['new_phone'];
+    if ($phone !== $userPhone) {
         $update_phone_query = "UPDATE users SET phone = ? WHERE id = ?";
         $stmt = $conn->prepare($update_phone_query);
         $stmt->bind_param("si", $phone, $userID);
@@ -133,7 +130,6 @@ if (isset($_POST['place_order'])) {
 
 $conn->close();
 ?>
-
 
 <!DOCTYPE html>
 <html lang="en">
@@ -225,13 +221,11 @@ $conn->close();
             text-decoration: none;
             text-align: center;
             display: inline-block;
-            transition: background-color 0.3s ease, transform 0.3s ease;
-            margin-top: 10px;
+            transition: background-color 0.3s ease;
         }
 
         .btn:hover {
             background-color: #0056b3;
-            transform: scale(1.05);
         }
 
         .home-button {
@@ -247,12 +241,11 @@ $conn->close();
             color: #fff;
             text-decoration: none;
             border-radius: 4px;
-            transition: background-color 0.3s ease, transform 0.3s ease;
+            transition: background-color 0.3s ease;
         }
 
         .home-button a:hover {
             background-color: #0056b3;
-            transform: scale(1.05);
         }
 
         .side-by-side {
@@ -328,8 +321,8 @@ $conn->close();
         </table>
     </div>
     <div>
-        <label>
-            <input type="checkbox" id="senior-checkbox" name="is_senior_or_pwd" value="1" <?php echo $isSeniorOrPwd ? 'checked' : ''; ?> onclick="toggleSeniorDiscount()"> I am a Senior/PWD
+            <label>
+                <input type="checkbox" id="senior-checkbox" name="is_senior_or_pwd" value="1" <?php echo $isSeniorOrPwd ? 'checked' : ''; ?> onclick="toggleSeniorDiscount()"> I am a Senior/PWD
         </label>
     </div>
 
@@ -339,51 +332,8 @@ $conn->close();
             <div class="inputBox">
                 <input type="text" name="name" value="<?php echo htmlspecialchars($userName); ?>" placeholder="Your Name" required>
             </div>
-            <div>
-                <label>
-                    <input type="radio" name="address_option" value="current" checked> Use Current Address
-                </label>
-                <label>
-                    <input type="radio" name="address_option" value="new"> Use New Address
-                </label>
-                <div class="inputBox">
-                    <input type="text" name="current_address" value="<?php echo htmlspecialchars($userAddress); ?>" readonly>
-                </div>
-            </div>
-            <div>
-                
-                <div id="new-address-fields" style="display: none;">
-                    <div class="inputBox">
-                        <input type="text" name="new_street" placeholder="Street">
-                    </div>
-                    <div class="inputBox">
-                        <input type="text" name="new_city" placeholder="City">
-                    </div>
-                    <div class="inputBox">
-                        <input type="text" name="new_zipcode" placeholder="Zip Code">
-                    </div>
-                    <div class="inputBox">
-                        <input type="text" name="new_region" placeholder="Region">
-                    </div>
-                </div>
-            </div>
-            <div>
-                <label>
-                    <input type="radio" name="phone_option" value="current" checked> Use Current Phone Number
-                </label>
-                <label>
-                    <input type="radio" name="phone_option" value="new"> Use New Phone Number
-                </label>
-                <div class="inputBox">
-                    <input type="tel" name="current_phone" value="<?php echo htmlspecialchars($userPhone); ?>" readonly>
-                </div>
-            </div>
-            <div>
-                <div id="new-phone-fields" style="display: none;">
-                    <div class="inputBox">
-                        <input type="tel" name="new_phone" placeholder="New Phone Number">
-                    </div>
-                </div>
+            <div class="inputBox">
+                <input type="tel" name="number" value="<?php echo htmlspecialchars($userPhone); ?>" placeholder="Your Phone Number" readonly>
             </div>
             <div class="inputBox">
                 <input type="email" name="email" value="<?php echo htmlspecialchars($userEmail); ?>" placeholder="Your Email" required>
@@ -395,36 +345,15 @@ $conn->close();
                     <option value="Gcash">Gcash</option>
                 </select>
             </div>
+            <div class="inputBox">
+                <input type="text" name="address" value="<?php echo htmlspecialchars($userAddress); ?>" placeholder="Address" readonly>
+            </div>
             <div class="side-by-side">
-            <input type="submit" name="place_order" value="Place Order" class="btn">
-            <a href="cart.php" class="btn">Back to Cart</a>
-        </div>
+                <input type="submit" name="place_order" value="Place Order" class="btn">
+            </div>
         </form>
     </div>
-
-    <script>
-        document.querySelectorAll('input[name="address_option"]').forEach((elem) => {
-            elem.addEventListener('change', function() {
-                const newAddressFields = document.getElementById('new-address-fields');
-                if (this.value === 'new') {
-                    newAddressFields.style.display = 'block';
-                } else {
-                    newAddressFields.style.display = 'none';
-                }
-            });
-        });
-
-        document.querySelectorAll('input[name="phone_option"]').forEach((elem) => {
-            elem.addEventListener('change', function() {
-                const newPhoneFields = document.getElementById('new-phone-fields');
-                if (this.value === 'new') {
-                    newPhoneFields.style.display = 'block';
-                } else {
-                    newPhoneFields.style.display = 'none';
-                }
-            });
-        });
-    </script>
 </div>
+
 </body>
 </html>

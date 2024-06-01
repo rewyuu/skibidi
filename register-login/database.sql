@@ -27,9 +27,9 @@ CREATE TABLE `users` (
     `email` VARCHAR(255) NOT NULL UNIQUE,
     `password` VARCHAR(255) NOT NULL,
     `phone` VARCHAR(15) NOT NULL,
+    `is_senior_or_pwd` BOOLEAN NOT NULL DEFAULT FALSE,
     `address` VARCHAR(255) NOT NULL,
-    `cart_count` INT NOT NULL DEFAULT 0,
-    `is_senior_or_pwd` BOOLEAN NOT NULL DEFAULT FALSE
+    `cart_count` INT NOT NULL DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- table for cart items
@@ -51,6 +51,11 @@ CREATE TABLE `orders` (
     `total_price` DECIMAL(10, 2) NOT NULL,
     `status` ENUM('Pending', 'Order Accepted' , 'Order Declined' , 'Delivered', 'On Delivery' , 'Cancelled') DEFAULT 'Pending',
     `ordered_items` JSON NOT NULL,
+    `senior_or_pwd_card_id` VARCHAR(255) NOT NULL,
+    `senior_or_pwd_card_name` VARCHAR(255) NOT NULL,
+    `gcash_account_name` VARCHAR(255) NOT NULL,
+    `gcash_number` VARCHAR(15) NOT NULL,
+    `gcash_reference_number` VARCHAR(255) NOT NULL,
     `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 

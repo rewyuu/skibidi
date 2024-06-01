@@ -2,14 +2,19 @@
 session_start();
 include('database.php');
 
+if (!isset($_SESSION['user']['id'])) {
+    echo "User is not logged in.";
+    exit;
+}
+
 $userID = $_SESSION['user']['id'];
 
 if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['cancel_order'])) {
     $orderID = $_POST['order_id'];
 
-    $query = "UPDATE orders SET status = 'Cancelled' WHERE id = ?";
+    $query = "UPDATE orders SET status = 'Cancelled' WHERE id = ? AND user_id = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param("i", $orderID);
+    $stmt->bind_param("ii", $orderID, $userID);
     $stmt->execute();
     $stmt->close();
 
@@ -17,7 +22,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['cancel_order'])) {
     exit();
 }
 
-$query = "SELECT o.id, o.address as order_address, o.payment_type, o.status, o.ordered_items, o.created_at, u.full_name, u.phone 
+$query = "SELECT o.id, o.address as order_address, o.payment_type, o.status, o.ordered_items, o.total_price, o.created_at, u.full_name, u.phone 
           FROM orders o 
           INNER JOIN users u ON o.user_id = u.id
           WHERE o.user_id = ?";
@@ -71,8 +76,7 @@ $conn->close();
             margin-top: 20px;
         }
 
-        .order-table th,
-        .order-table td {
+        .order-table th, .order-table td {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: left;
@@ -168,58 +172,50 @@ $conn->close();
 
         <div class="order-status">
             <?php foreach ($orders as $order) : ?>
-
                 <div class="order-item">
-
                     <div class="item-info">
                         <span>Order #</span>
                         <span><?php echo $order['id']; ?></span>
                     </div>
-
                     <div class="item-info">
                         <span>Full Name:</span>
                         <span><?php echo htmlspecialchars($order['full_name']); ?></span>
                     </div>
-
                     <div class="item-info">
                         <span>Phone:</span>
                         <span><?php echo htmlspecialchars($order['phone']); ?></span>
                     </div>
-
                     <div class="item-info">
                         <span>Address:</span>
                         <span><?php echo htmlspecialchars($order['order_address']); ?></span>
                     </div>
-
                     <div class="item-info">
                         <span>Payment Method:</span>
                         <span><?php echo $order['payment_type']; ?></span>
                     </div>
-
                     <div class="item-info">
                         <span>Status:</span>
                         <span class="status <?php echo strtolower($order['status']); ?>"><?php echo $order['status']; ?></span>
                     </div>
-
                     <div class="item-info">
                         <span>Ordered Items:</span>
-
                         <ul>
                             <?php foreach ($order['ordered_items'] as $item) : ?>
                                 <li><?php echo $item['item_name']; ?> (<?php echo $item['quantity']; ?>) - <?php echo 'P' . number_format($item['item_price'] * $item['quantity'], 2); ?></li>
                             <?php endforeach; ?>
                         </ul>
                     </div>
-
+                    <div class="item-info">
+                        <span>Total Price:</span>
+                        <span><?php echo 'P' . number_format($order['total_price'], 2); ?></span>
+                    </div>
                     <?php if ($order['status'] === 'Pending') : ?>
                         <form action="<?php echo htmlspecialchars($_SERVER["PHP_SELF"]); ?>" method="post">
                             <input type="hidden" name="order_id" value="<?php echo $order['id']; ?>">
                             <button type="submit" class="cancel-button" name="cancel_order">Cancel Order</button>
                         </form>
                     <?php endif; ?>
-
                 </div>
-
             <?php endforeach; ?>
             <?php if (empty($orders)) : ?>
                 <p class="status-heading">You have no orders yet.</p>
